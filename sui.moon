@@ -138,22 +138,25 @@ sui.bc = (color, widget) ->
 		return widget.draw x, y
 	return nwidget
 
-sui.label = (w, h, reader) ->
+sui.label = (w, h, caption) ->
+	reader = lazy(caption)
 	draw = (x, y) ->
 		graphics.print reader(), x, y
 		return w, h
 	size = -> return w, h
 	return {draw: draw, size: size}
 
-sui.hbar = (w, h, reader) ->
+sui.hbar = (w, h, value) ->
+	reader = lazy(value)
 	draw = (x, y) ->
 		graphics.rectangle 'fill', x, y, w * reader(), h
 		return w, h
 	size = -> return w, h
 	return {draw: draw, size: size}
 
-sui.pie = (diameter, reader) ->
+sui.pie = (diameter, value) ->
 	r = diameter / 2
+	reader = lazy(value)
 	draw = (x, y) ->
 		graphics.arc 'fill', x + r, y + r, r, -quarter_tau, tau * reader() - quarter_tau
 		return diameter, diameter

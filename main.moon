@@ -17,7 +17,7 @@ mouse_x, mouse_y = 0, 0
 font = -> newFont(16)
 bigFont = -> newFont(24)
 ui = -> sui.vbox 5, {
-	sui.font bigFont, sui.label 200, 24, -> "Hello, world!"
+	sui.font bigFont, sui.label 200, 24, "Hello, world!"
 	sui.label 200, 16, -> tostring value1
 	sui.bc {50, 50, 50, 255}, sui.hbar 200, 16, -> value1 / 100
 	sui.hbox 5, {
