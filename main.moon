@@ -16,8 +16,10 @@ mouse_x, mouse_y = 0, 0
 -- these shrink-wrapped variables are initialized in love.load
 font = -> newFont(16)
 bigFont = -> newFont(24)
-ui = -> sui.vbox 5, {
-	sui.font bigFont, sui.label 200, 24, "Hello, world!"
+
+ui = sui.vbox 5, {
+	sui.font -> bigFont,
+		sui.label 200, 24, "Hello, world!"
 	sui.label 200, 16, -> tostring value1
 	sui.bc {50, 50, 50, 255}, sui.hbar 200, 16, -> value1 / 100
 	sui.hbox 5, {
@@ -44,7 +46,6 @@ love.load = (arg) ->
 	-- initialize shrink-wrapped variables
 	font = font()
 	bigFont = bigFont()
-	ui = ui()
 	-- settings
 	setFont font
 	setColor 200, 200, 200

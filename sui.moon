@@ -102,8 +102,11 @@ sui.font = (font, widget) ->
 	nwidget = copy(widget)
 	reader = lazy(font)
 	nwidget.draw = (x, y) ->
+		f = reader()
+		if f == nil
+			return widget.draw x, y
 		prev = graphics.getFont()
-		graphics.setFont reader()
+		graphics.setFont f
 		w, h = widget.draw x, y
 		graphics.setFont prev
 		return w, h
