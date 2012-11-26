@@ -10,7 +10,6 @@ text = ""
 value2f = -> math.min(value1 * 4, 100)
 
 clicked1 = 0
-clicked2 = false
 mouse_x, mouse_y = 0, 0
 
 -- these shrink-wrapped variables are initialized in love.load
@@ -31,15 +30,17 @@ ui = sui.vbox 5, {
 	}
 	sui.label 200, 16, -> "Type away! #text = " .. tostring(#text)
 	sui.label 200, 16, -> text
-	sui.margin 5, 5, sui.mousepressed (x, y, button) ->
+	sui.margin 5, 5, sui.clicked (x, y, button) ->
 			if button == 'l'
 				clicked1 = 1
 				mouse_x, mouse_y = x, y,
-		sui.bc {50, 50, 50, 255}, sui.margin 30, 20, sui.label 120, 32, ->
-			if clicked1 > 0
-				"You clicked at \n#{mouse_x}, #{mouse_y}"
-			else
-				'Click me!'
+		sui.bc {50, 50, 50, 255},
+			sui.margin 30, 20,
+				sui.label 120, 32, ->
+					if clicked1 > 0
+						"You clicked at \n#{mouse_x}, #{mouse_y}"
+					else
+						'Click me!'
 }
 
 love.load = (arg) ->
@@ -65,6 +66,10 @@ love.draw = ->
 
 love.mousepressed = (x, y, button) ->
 	ui.mousepressed(ui_x, ui_y, x, y, button)
+	return
+
+love.mousereleased = (x, y, button) ->
+	ui.mousereleased(ui_x, ui_y, x, y, button)
 	return
 
 love.keypressed = (key, unicode) ->
