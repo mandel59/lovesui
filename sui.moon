@@ -17,8 +17,8 @@ bang = (obj) ->
 sequence = (...) ->
 	fs = {...}
 	(...) ->
-		for i = 1, #fs
-			fs[i] ...
+		for i, f in ipairs(fs)
+			f ...
 
 sui = {}
 
@@ -95,31 +95,48 @@ sui.margin = (marginx, marginy, widget) ->
 		mousereleased: ms 'mousereleased',
 		children: children}
 
-build_mousehandler = (obj, handler) -> (wx, wy, mx, my, button) ->
+handle_on_area = (obj, handler) -> (wx, wy, mx, my, button) ->
 	x, y = mx - wx, my - wy
 	w, h = obj.size()
 	if 0 <= x and x < w and 0 <= y and y < h
 		handler(x, y, button)
 
+handle_global = (obj, handler) -> (wx, wy, mx, my, button) ->
+	x, y = mx - wx, my - wy
+	handler(x, y, button)
+
+connect_handler = (child, parent) ->
+	if type(child) == 'function'
+		sequence(child, parent)
+	else
+		parent
+
 sui.mousepressed = (handler, widget) ->
 	obj = copy(widget)
-	mousepressed = obj.mousepressed
-	obj.mousepressed = build_mousehandler(obj, handler)
+	obj.mousepressed = connect_handler obj.mousepressed, handle_on_area obj, handler
 	return obj
 
 sui.mousereleased = (handler, widget) ->
 	obj = copy(widget)
-	obj.mousereleased = build_mousehandler(obj, handler)
+	obj.mousereleased = connect_handler obj.mousereleased, handle_on_area obj, handler
+	return obj
+
+sui.global_mousepressed = (handler, widget) ->
+	obj = copy(widget)
+	obj.mousepressed = connect_handler obj.mousepressed, handle_global obj, handler
+	return obj
+
+sui.global_mousereleased = (handler, widget) ->
+	obj = copy(widget)
+	obj.mousereleased = connect_handler obj.mousereleased, handle_global obj, handler
 	return obj
 
 sui.clicked = (handler, widget) ->
 	mousedown = nil
-	sui.mousepressed (x, y, button) ->
-			mousedown = button,
-		sui.mousereleased (x, y, button) ->
-				if mousedown == button then handler(x, y, button)
-				mousedown = nil,
-			widget
+	sui.mousepressed (x, y, button) -> mousedown = button,
+		sui.global_mousereleased (x, y, button) -> mousedown = nil,
+			sui.mousereleased (x, y, button) -> if mousedown == button then handler(x, y, button),
+				widget
 
 sui.font = (font, widget) ->
 	obj = copy(widget)
