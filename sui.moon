@@ -76,6 +76,28 @@ sui.hbox = (padding, widgets) ->
 	obj.mousereleased = ms 'mousereleased'
 	return obj
 
+sui.option = (key, widgets) ->
+	obj = {}
+	obj.children = widgets
+	obj.size = ->
+		wid = widgets[bang(key)]
+		if wid ~= nil
+			return wid.size()
+		else
+			return 0, 0
+	func = (name) -> (x, y, ...) ->
+		wid = widgets[bang(key)]
+		if wid ~= nil
+			v = wid[name]
+			if type(v) == 'function'
+				v(x, y, ...)
+			else
+				v
+	obj.draw = func 'draw'
+	obj.mousepressed = func 'mousepressed'
+	obj.mousereleased = func 'mousereleased'
+	return obj
+
 sui.margin = (marginx, marginy, widget) ->
 	children = {widget}
 	draw = (x, y) ->
