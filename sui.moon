@@ -14,6 +14,12 @@ bang = (obj) ->
 	else
 		obj
 
+sequence = (...) ->
+	fs = {...}
+	(...) ->
+		for i = 1, #fs
+			fs[i] ...
+
 sui = {}
 
 sui.vbox = (padding, widgets) ->
@@ -83,7 +89,7 @@ sui.margin = (marginx, marginy, widget) ->
 		mousereleased: ms 'mousereleased',
 		children: children}
 
-mousehandler = (obj, handler) -> (wx, wy, mx, my, button) ->
+build_mousehandler = (obj, handler) -> (wx, wy, mx, my, button) ->
 	x, y = mx - wx, my - wy
 	w, h = obj.size()
 	if 0 <= x and x < w and 0 <= y and y < h
@@ -92,13 +98,23 @@ mousehandler = (obj, handler) -> (wx, wy, mx, my, button) ->
 
 sui.mousepressed = (handler, widget) ->
 	obj = copy(widget)
-	obj.mousepressed = mousehandler(obj, handler)
+	mousepressed = obj.mousepressed
+	obj.mousepressed = build_mousehandler(obj, handler)
 	return obj
 
 sui.mousereleased = (handler, widget) ->
 	obj = copy(widget)
-	obj.mousepressed = mousehandler(obj, handler)
+	obj.mousereleased = build_mousehandler(obj, handler)
 	return obj
+
+sui.clicked = (handler, widget) ->
+	mousedown = nil
+	sui.mousepressed (x, y, button) ->
+			mousedown = button,
+		sui.mousereleased (x, y, button) ->
+				if mousedown == button then handler(x, y, button)
+				mousedown = nil,
+			widget
 
 sui.font = (font, widget) ->
 	obj = copy(widget)
