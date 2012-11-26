@@ -160,6 +160,20 @@ sui.clicked = (handler, widget) ->
 			sui.mousereleased (x, y, button) -> if mousedown == button then handler(x, y, button),
 				widget
 
+sui.float = (dx, dy, widget) ->
+	obj = copy(widget)
+	obj.children = widgets
+	obj.size = -> return 0, 0
+	func = (f) ->
+		if type(f) == 'function'
+			(x, y, ...) -> f(x + bang(dx), y + bang(dy), ...)
+		else
+			f
+	obj.draw = func obj.draw
+	obj.mousepressed = func obj.mousepressed
+	obj.mousereleased = func obj.mousereleased
+	return obj
+
 sui.font = (font, widget) ->
 	obj = copy(widget)
 	draw = widget.draw
