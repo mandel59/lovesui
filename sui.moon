@@ -166,9 +166,10 @@ sui.float = (dx, dy, widget) ->
 
 sui.margin = (marginx, marginy, widget) ->
 	obj = copy(widget)
+	size = obj.size
 	obj.size = ->
 		mx, my = bang(marginx), bang(marginy)
-		w, h = widget.size()
+		w, h = size()
 		return w + 2 * mx, h + 2 * my
 	func = (f) ->
 		if type(f) == 'function'
@@ -183,7 +184,7 @@ sui.margin = (marginx, marginy, widget) ->
 
 sui.font = (font, widget) ->
 	obj = copy(widget)
-	draw = widget.draw
+	draw = obj.draw
 	obj.draw = (x, y) ->
 		f = bang(font)
 		if f == nil
@@ -196,28 +197,31 @@ sui.font = (font, widget) ->
 
 sui.fc = (color, widget) ->
 	obj = copy(widget)
+	draw = obj.draw
 	obj.draw = (x, y) ->
 		c = bang(color)
 		if c == nil
-			return widget.draw x, y
+			return draw x, y
 		r, g, b, a = graphics.getColor()
 		graphics.setColor c
-		widget.draw x, y
+		draw x, y
 		graphics.setColor r, g, b, a
 	return obj
 
 sui.bc = (color, widget) ->
 	obj = copy(widget)
+	draw = obj.draw
+	size = obj.size
 	obj.draw = (x, y) ->
 		c = bang(color)
 		if c == nil
-			return widget.draw x, y
+			return draw x, y
 		r, g, b, a = graphics.getColor()
 		graphics.setColor c
-		w, h = widget.size()
+		w, h = size()
 		graphics.rectangle 'fill', x, y, w, h
 		graphics.setColor r, g, b, a
-		widget.draw x, y
+		draw x, y
 	return obj
 
 sui.frame = (width, height, draw) ->
