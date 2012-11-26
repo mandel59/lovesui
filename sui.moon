@@ -47,6 +47,10 @@ sui.vbox = (padding, widgets) ->
 			f(x, y, ...)
 	obj.mousepressed = ms 'mousepressed'
 	obj.mousereleased = ms 'mousereleased'
+	obj.update = (...) ->
+		for i, wid in ipairs widgets
+			f = wid.update
+			if type(f) == 'function' then f(...)
 	return obj
 
 sui.hbox = (padding, widgets) ->
@@ -74,6 +78,10 @@ sui.hbox = (padding, widgets) ->
 			f(x, y, ...)
 	obj.mousepressed = ms 'mousepressed'
 	obj.mousereleased = ms 'mousereleased'
+	obj.update = (...) ->
+		for i, wid in ipairs widgets
+			f = wid.update
+			if type(f) == 'function' then f(...)
 	return obj
 
 sui.option = (key, widgets) ->
@@ -85,37 +93,19 @@ sui.option = (key, widgets) ->
 			return wid.size()
 		else
 			return 0, 0
-	func = (name) -> (x, y, ...) ->
+	func = (name) -> (...) ->
 		wid = widgets[bang(key)]
 		if wid ~= nil
 			v = wid[name]
 			if type(v) == 'function'
-				v(x, y, ...)
+				v(...)
 			else
 				v
 	obj.draw = func 'draw'
 	obj.mousepressed = func 'mousepressed'
 	obj.mousereleased = func 'mousereleased'
+	obj.update = func 'update'
 	return obj
-
-sui.margin = (marginx, marginy, widget) ->
-	children = {widget}
-	draw = (x, y) ->
-		mx, my = bang(marginx), bang(marginy)
-		w, h = children[1].draw x + mx, y + my
-	size = ->
-		mx, my = bang(marginx), bang(marginy)
-		w, h = children[1].size()
-		return w + 2 * mx, h + 2 * my
-	ms = (name) -> (x, y, ...) ->
-		mx, my = bang(marginx), bang(marginy)
-		f = children[1][name]
-		if type(f) == 'function'
-			f(x + mx, y + my, ...)
-	return {draw: draw, size: size,
-		mousepressed: ms 'mousepressed',
-		mousereleased: ms 'mousereleased',
-		children: children}
 
 handle_on_area = (obj, handler) -> (wx, wy, mx, my, button) ->
 	x, y = mx - wx, my - wy
@@ -153,6 +143,11 @@ sui.global_mousereleased = (handler, widget) ->
 	obj.mousereleased = connect_handler obj.mousereleased, handle_global obj, handler
 	return obj
 
+sui.update = (handler, widget) ->
+	obj = copy(widget)
+	obj.update = connect_handler obj.update, handler
+	return obj
+
 sui.clicked = (handler, widget) ->
 	mousedown = nil
 	sui.mousepressed (x, y, button) -> mousedown = button,
@@ -162,13 +157,29 @@ sui.clicked = (handler, widget) ->
 
 sui.float = (dx, dy, widget) ->
 	obj = copy(widget)
-	obj.children = widgets
 	obj.size = -> return 0, 0
 	func = (f) ->
 		if type(f) == 'function'
 			(x, y, ...) -> f(x + bang(dx), y + bang(dy), ...)
 		else
 			f
+	obj.draw = func obj.draw
+	obj.mousepressed = func obj.mousepressed
+	obj.mousereleased = func obj.mousereleased
+	return obj
+
+sui.margin = (marginx, marginy, widget) ->
+	obj = copy(widget)
+	obj.size = ->
+		mx, my = bang(marginx), bang(marginy)
+		w, h = widget.size()
+		return w + 2 * mx, h + 2 * my
+	func = (f) ->
+		if type(f) == 'function'
+			(x, y, ...) -> f(x + bang(marginx), y + bang(marginy), ...)
+		else
+			f
+	
 	obj.draw = func obj.draw
 	obj.mousepressed = func obj.mousepressed
 	obj.mousereleased = func obj.mousereleased
