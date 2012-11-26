@@ -33,20 +33,18 @@ sui.vbox = (padding, widgets) ->
 			ox = math.max ox, w
 			oy += h + p
 		return ox, oy - p
-	func = (f) -> (x, y, ...) ->
+	func = (name) -> (x, y, ...) ->
 		p = bang(padding)
 		oy = 0
 		for i, wid in ipairs widgets
-			f wid, x, y + oy, ...
+			f = wid[name]
+			if type(f) == 'function'
+				f x, y + oy, ...
 			w, h = wid.size()
 			oy += h + p
-	obj.draw = func (wid, x, y) -> wid.draw x, y
-	ms = (name) -> func (wid, x, y, ...) ->
-		f = wid[name]
-		if type(f) == 'function'
-			f(x, y, ...)
-	obj.mousepressed = ms 'mousepressed'
-	obj.mousereleased = ms 'mousereleased'
+	obj.draw = func 'draw'
+	obj.mousepressed = func 'mousepressed'
+	obj.mousereleased = func 'mousereleased'
 	obj.update = (...) ->
 		for i, wid in ipairs widgets
 			f = wid.update
@@ -64,20 +62,18 @@ sui.hbox = (padding, widgets) ->
 			ox += w + p
 			oy = math.max oy, h
 		return ox, oy - p
-	func = (f) -> (x, y, ...) ->
+	func = (name) -> (x, y, ...) ->
 		p = bang(padding)
 		ox = 0
 		for i, wid in ipairs widgets
-			f wid, x + ox, y, ...
+			f = wid[name]
+			if type(f) == 'function'
+				f x + ox, y, ...
 			w, h = wid.size()
 			ox += w + p
-	obj.draw = func (wid, x, y) -> wid.draw x, y
-	ms = (name) -> func (wid, x, y, ...) ->
-		f = wid[name]
-		if type(f) == 'function'
-			f(x, y, ...)
-	obj.mousepressed = ms 'mousepressed'
-	obj.mousereleased = ms 'mousereleased'
+	obj.draw = func 'draw'
+	obj.mousepressed = func 'mousepressed'
+	obj.mousereleased = func 'mousereleased'
 	obj.update = (...) ->
 		for i, wid in ipairs widgets
 			f = wid.update
