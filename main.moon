@@ -16,17 +16,21 @@ mouse_x, mouse_y = 0, 0
 font = -> newFont(16)
 bigFont = -> newFont(24)
 
-ui = sui.vbox 5, {
+ui = sui.focusroot sui.vbox 5, {
 	sui.font -> bigFont,
-		sui.label 200, 24, "Hello, world!"
-	sui.label 200, 16, -> tostring value1
+		sui.focusbc {64, 64, 64, 255}, nil,
+			sui.label 200, 24, "Hello, world!"
+	sui.focusbc {64, 64, 64, 255}, nil,
+		sui.label 200, 16, -> tostring value1
 	sui.bc {50, 50, 50, 255}, sui.hbar 200, 16, -> value1 / 100
 	sui.hbox 5, {
-		sui.pie 50, -> value1 / 100
-		sui.margin 10, 10, sui.pie 30, -> 1 - value1 / 100
-		sui.fc -> if value2f() == 100
-				return {255, 128, 64, 255},
-			sui.pie 50, -> value2f() / 100
+		sui.focusbc {64, 64, 64, 255}, nil,
+			sui.pie 50, -> value1 / 100
+		sui.margin 10, 10, sui.focusbc {64, 64, 64, 255}, nil,
+			sui.pie 30, -> 1 - value1 / 100
+		sui.float 10, 0, sui.focusbc {64, 64, 64, 255}, nil,
+			sui.fc -> if value2f() == 100 then return {255, 128, 64, 255},
+				sui.pie 50, -> value2f() / 100
 	}
 	sui.label 200, 16, -> "Type away! #text = " .. tostring(#text)
 	sui.label 200, 16, -> text
@@ -58,6 +62,7 @@ love.update = (dt) ->
 		value1 = 0
 	if clicked1 > 0
 		clicked1 -= dt
+	ui.update(dt)
 	return
 
 love.draw = ->
@@ -74,6 +79,8 @@ love.mousereleased = (x, y, button) ->
 
 love.keypressed = (key, unicode) ->
 	switch key
+		when 'tab'
+			ui.focus(false, love.keyboard.isDown('lshift', 'rshift'))
 		when 'f5'
 			love.filesystem.load('sui.lua')()
 			love.filesystem.load('main.lua')()
