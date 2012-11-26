@@ -8,22 +8,23 @@ quarter_tau = 0.25 * tau
 copy = (obj) ->
 	{k, v for k, v in pairs obj}
 
-lazy = (obj) ->
+bang = (obj) ->
 	if type(obj) == 'function'
-		obj
+		obj!
 	else
-		-> obj
+		obj
 
 sui = {}
 
 sui.vbox = (padding, widgets) ->
 	func = (f) -> (x, y, ...) ->
+		p = bang(padding)
 		ox, oy = 0, 0
 		for i = 1, #widgets
 			w, h = f widgets[i], x, y + oy, ...
 			ox = math.max ox, w
-			oy += h + padding
-		return ox, oy - padding
+			oy += h + p
+		return ox, oy - p
 	draw = func (wid, x, y) -> wid.draw x, y
 	size = func (wid, x, y) -> wid.size()
 	ms = (name) -> func (wid, x, y, ...) ->
@@ -39,12 +40,13 @@ sui.vbox = (padding, widgets) ->
 
 sui.hbox = (padding, widgets) ->
 	func = (f) -> (x, y, ...) ->
+		p = bang(padding)
 		ox, oy = 0, 0
 		for i = 1, #widgets
 			w, h = f widgets[i], x + ox, y, ...
-			ox += w + padding
+			ox += w + p
 			oy = math.max oy, h
-		return ox - padding, oy
+		return ox - p, oy
 	draw = func (wid, x, y) -> wid.draw x, y
 	size = func (wid, x, y) -> wid.size()
 	ms = (name) -> func (wid, x, y, ...) ->
@@ -61,15 +63,18 @@ sui.hbox = (padding, widgets) ->
 sui.margin = (marginx, marginy, widget) ->
 	children = {widget}
 	draw = (x, y) ->
-		w, h = children[1].draw x + marginx, y + marginy
-		return w + marginx + marginx, h + marginy + marginy
+		mx, my = bang(marginx), bang(marginy)
+		w, h = children[1].draw x + mx, y + marginy
+		return w + 2 * mx, h + 2 * my
 	size = ->
+		mx, my = bang(marginx), bang(marginy)
 		w, h = children[1].size()
-		return w + marginx + marginx, h + marginy + marginy
+		return w + 2 * mx, h + 2 * my
 	ms = (name) -> (x, y, ...) ->
+		mx, my = bang(marginx), bang(marginy)
 		f = children[1][name]
 		w, h = if type(f) == 'function'
-			f(x + marginx, y + marginy, ...)
+			f(x + mx, y + my, ...)
 		else
 			children[1].size()
 		return w + marginx + marginx, h + marginy + marginy
@@ -78,59 +83,54 @@ sui.margin = (marginx, marginy, widget) ->
 		mousereleased: ms 'mousereleased',
 		children: children}
 
+mousehandler = (obj, handler) -> (wx, wy, mx, my, button) ->
+	x, y = mx - wx, my - wy
+	w, h = obj.size()
+	if 0 <= x and x < w and 0 <= y and y < h
+		handler(x, y, button)
+	return w, h
+
 sui.mousepressed = (handler, widget) ->
-	nwidget = copy(widget)
-	nwidget.mousepressed = (wx, wy, mx, my, button) ->
-		x, y = mx - wx, my - wy
-		w, h = widget.size()
-		if 0 <= x and x < w and 0 <= y and y < h
-			handler(x, y, button)
-		return w, h
-	return nwidget
+	obj = copy(widget)
+	obj.mousepressed = mousehandler(obj, handler)
+	return obj
 
 sui.mousereleased = (handler, widget) ->
-	nwidget = copy(widget)
-	nwidget.mousepressed = (wx, wy, mx, my, button) ->
-		x, y = mx - wx, my - wy
-		w, h = widget.size()
-		if 0 <= x and x < w and 0 <= y and y < h
-			handler(x, y, button)
-		return w, h
-	return nwidget
+	obj = copy(widget)
+	obj.mousepressed = mousehandler(obj, handler)
+	return obj
 
 sui.font = (font, widget) ->
-	nwidget = copy(widget)
-	reader = lazy(font)
-	nwidget.draw = (x, y) ->
-		f = reader()
+	obj = copy(widget)
+	draw = widget.draw
+	obj.draw = (x, y) ->
+		f = bang(font)
 		if f == nil
-			return widget.draw x, y
+			return draw x, y
 		prev = graphics.getFont()
 		graphics.setFont f
-		w, h = widget.draw x, y
+		draw x, y
 		graphics.setFont prev
-		return w, h
-	return nwidget
+		obj.size!
+	return obj
 
 sui.fc = (color, widget) ->
-	nwidget = copy(widget)
-	reader = lazy(color)
-	nwidget.draw = (x, y) ->
-		c = reader()
+	obj = copy(widget)
+	obj.draw = (x, y) ->
+		c = bang(color)
 		if c == nil
 			return widget.draw x, y
 		r, g, b, a = graphics.getColor()
 		graphics.setColor c
-		w, h = widget.draw x, y
+		widget.draw x, y
 		graphics.setColor r, g, b, a
-		return w, h
-	return nwidget
+		obj.size!
+	return obj
 
 sui.bc = (color, widget) ->
-	nwidget = copy(widget)
-	reader = lazy(color)
-	nwidget.draw = (x, y) ->
-		c = reader()
+	obj = copy(widget)
+	obj.draw = (x, y) ->
+		c = bang(color)
 		if c == nil
 			return widget.draw x, y
 		r, g, b, a = graphics.getColor()
@@ -138,30 +138,33 @@ sui.bc = (color, widget) ->
 		w, h = widget.size()
 		graphics.rectangle 'fill', x, y, w, h
 		graphics.setColor r, g, b, a
-		return widget.draw x, y
-	return nwidget
+		widget.draw x, y
+	return obj
 
-sui.label = (w, h, caption) ->
-	reader = lazy(caption)
-	draw = (x, y) ->
-		graphics.print reader(), x, y
-		return w, h
-	size = -> return w, h
-	return {draw: draw, size: size}
+sui.label = (width, height, caption) ->
+	obj = {}
+	obj.draw = (x, y) ->
+		graphics.print bang(caption), x, y
+		obj.size!
+	obj.size = -> return bang(width), bang(height)
+	return obj
 
-sui.hbar = (w, h, value) ->
-	reader = lazy(value)
-	draw = (x, y) ->
-		graphics.rectangle 'fill', x, y, w * reader(), h
-		return w, h
-	size = -> return w, h
-	return {draw: draw, size: size}
+sui.hbar = (width, height, value) ->
+	obj = {}
+	obj.draw = (x, y) ->
+		graphics.rectangle 'fill', x, y, bang(width) * bang(value), bang(height)
+		obj.size!
+	obj.size = -> return bang(width), bang(height)
+	return obj
 
 sui.pie = (diameter, value) ->
-	r = diameter / 2
-	reader = lazy(value)
-	draw = (x, y) ->
-		graphics.arc 'fill', x + r, y + r, r, -quarter_tau, tau * reader() - quarter_tau
-		return diameter, diameter
-	size = -> return diameter, diameter
-	return {draw: draw, size: size}
+	obj = {}
+	obj.draw = (x, y) ->
+		d = bang(diameter)
+		r = d / 2
+		graphics.arc 'fill', x + r, y + r, r, -quarter_tau, tau * bang(value) - quarter_tau
+		obj.size!
+	obj.size = ->
+		d = bang(diameter)
+		return d, d
+	return obj
