@@ -199,19 +199,17 @@ sui.bc = (color, widget) ->
 		widget.draw x, y
 	return obj
 
-sui.label = (width, height, caption) ->
+sui.frame = (width, height, draw) ->
 	obj = {}
-	obj.draw = (x, y) ->
-		graphics.print bang(caption), x, y
 	obj.size = -> return bang(width), bang(height)
+	obj.draw = draw
 	return obj
 
+sui.label = (width, height, caption) ->
+	sui.frame width, height, (x, y) -> graphics.print bang(caption), x, y
+
 sui.hbar = (width, height, value) ->
-	obj = {}
-	obj.draw = (x, y) ->
-		graphics.rectangle 'fill', x, y, bang(width) * bang(value), bang(height)
-	obj.size = -> return bang(width), bang(height)
-	return obj
+	sui.frame width, height, (x, y) -> graphics.rectangle 'fill', x, y, bang(width) * bang(value), bang(height)
 
 sui.pie = (diameter, value) ->
 	obj = {}
