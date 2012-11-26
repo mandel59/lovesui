@@ -23,55 +23,64 @@ sequence = (...) ->
 sui = {}
 
 sui.vbox = (padding, widgets) ->
-	func = (f) -> (x, y, ...) ->
+	obj = {}
+	obj.children = widgets
+	obj.size = (x, y, ...) ->
 		p = bang(padding)
 		ox, oy = 0, 0
-		for i = 1, #widgets
-			w, h = f widgets[i], x, y + oy, ...
+		for i, wid in ipairs widgets
+			w, h = wid.size()
 			ox = math.max ox, w
 			oy += h + p
 		return ox, oy - p
-	draw = func (wid, x, y) -> wid.draw x, y
-	size = func (wid, x, y) -> wid.size()
-	ms = (name) -> func (wid, x, y, ...) ->
-		f = wid[name]
-		if type(f) == 'function'
-			f(x, y, ...)
-		else
-			wid.size()
-	return {draw: draw, size: size,
-		mousepressed: ms 'mousepressed',
-		mousereleased: ms 'mousereleased',
-		children: widgets}
-
-sui.hbox = (padding, widgets) ->
 	func = (f) -> (x, y, ...) ->
 		p = bang(padding)
-		ox, oy = 0, 0
-		for i = 1, #widgets
-			w, h = f widgets[i], x + ox, y, ...
-			ox += w + p
-			oy = math.max oy, h
-		return ox - p, oy
-	draw = func (wid, x, y) -> wid.draw x, y
-	size = func (wid, x, y) -> wid.size()
+		oy = 0
+		for i, wid in ipairs widgets
+			f wid, x, y + oy, ...
+			w, h = wid.size()
+			oy += h + p
+	obj.draw = func (wid, x, y) -> wid.draw x, y
 	ms = (name) -> func (wid, x, y, ...) ->
 		f = wid[name]
 		if type(f) == 'function'
 			f(x, y, ...)
-		else
-			wid.size()
-	return {draw: draw, size: size,
-		mousepressed: ms 'mousepressed',
-		mousereleased: ms 'mousereleased',
-		children: widgets}
+	obj.mousepressed = ms 'mousepressed'
+	obj.mousereleased = ms 'mousereleased'
+	return obj
+
+sui.hbox = (padding, widgets) ->
+	obj = {}
+	obj.children = widgets
+	obj.size = (x, y, ...) ->
+		p = bang(padding)
+		ox, oy = 0, 0
+		for i, wid in ipairs widgets
+			w, h = wid.size()
+			ox += w + p
+			oy = math.max oy, h
+		return ox, oy - p
+	func = (f) -> (x, y, ...) ->
+		p = bang(padding)
+		ox = 0
+		for i, wid in ipairs widgets
+			f wid, x + ox, y, ...
+			w, h = wid.size()
+			ox += w + p
+	obj.draw = func (wid, x, y) -> wid.draw x, y
+	ms = (name) -> func (wid, x, y, ...) ->
+		f = wid[name]
+		if type(f) == 'function'
+			f(x, y, ...)
+	obj.mousepressed = ms 'mousepressed'
+	obj.mousereleased = ms 'mousereleased'
+	return obj
 
 sui.margin = (marginx, marginy, widget) ->
 	children = {widget}
 	draw = (x, y) ->
 		mx, my = bang(marginx), bang(marginy)
-		w, h = children[1].draw x + mx, y + marginy
-		return w + 2 * mx, h + 2 * my
+		w, h = children[1].draw x + mx, y + my
 	size = ->
 		mx, my = bang(marginx), bang(marginy)
 		w, h = children[1].size()
@@ -79,11 +88,8 @@ sui.margin = (marginx, marginy, widget) ->
 	ms = (name) -> (x, y, ...) ->
 		mx, my = bang(marginx), bang(marginy)
 		f = children[1][name]
-		w, h = if type(f) == 'function'
+		if type(f) == 'function'
 			f(x + mx, y + my, ...)
-		else
-			children[1].size()
-		return w + marginx + marginx, h + marginy + marginy
 	return {draw: draw, size: size,
 		mousepressed: ms 'mousepressed',
 		mousereleased: ms 'mousereleased',
@@ -94,7 +100,6 @@ build_mousehandler = (obj, handler) -> (wx, wy, mx, my, button) ->
 	w, h = obj.size()
 	if 0 <= x and x < w and 0 <= y and y < h
 		handler(x, y, button)
-	return w, h
 
 sui.mousepressed = (handler, widget) ->
 	obj = copy(widget)
@@ -127,7 +132,6 @@ sui.font = (font, widget) ->
 		graphics.setFont f
 		draw x, y
 		graphics.setFont prev
-		obj.size!
 	return obj
 
 sui.fc = (color, widget) ->
@@ -140,7 +144,6 @@ sui.fc = (color, widget) ->
 		graphics.setColor c
 		widget.draw x, y
 		graphics.setColor r, g, b, a
-		obj.size!
 	return obj
 
 sui.bc = (color, widget) ->
@@ -161,7 +164,6 @@ sui.label = (width, height, caption) ->
 	obj = {}
 	obj.draw = (x, y) ->
 		graphics.print bang(caption), x, y
-		obj.size!
 	obj.size = -> return bang(width), bang(height)
 	return obj
 
@@ -169,7 +171,6 @@ sui.hbar = (width, height, value) ->
 	obj = {}
 	obj.draw = (x, y) ->
 		graphics.rectangle 'fill', x, y, bang(width) * bang(value), bang(height)
-		obj.size!
 	obj.size = -> return bang(width), bang(height)
 	return obj
 
@@ -179,7 +180,6 @@ sui.pie = (diameter, value) ->
 		d = bang(diameter)
 		r = d / 2
 		graphics.arc 'fill', x + r, y + r, r, -quarter_tau, tau * bang(value) - quarter_tau
-		obj.size!
 	obj.size = ->
 		d = bang(diameter)
 		return d, d
