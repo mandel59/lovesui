@@ -140,40 +140,35 @@ sui.option = (key, widgets) ->
 	obj.update = func 'update'
 	return obj
 
-handle_on_area = (obj, handler) -> (wx, wy, mx, my, button) ->
-	x, y = mx - wx, my - wy
-	w, h = obj.size()
-	if 0 <= x and x < w and 0 <= y and y < h
-		handler(x, y, button)
+eventhandler = (name, handler, widget) ->
+	obj = copy(widget)
+	obj[name] = connect_handler obj[name], handler
+	return obj
 
-handle_global = (obj, handler) -> (wx, wy, mx, my, button) ->
+handle_on_area = (size, handler) ->
+	(x, y, button) ->
+		w, h = size()
+		if 0 <= x and x < w and 0 <= y and y < h
+			handler(x, y, button)
+
+mouse_coordinate_transform = (handler) -> (wx, wy, mx, my, button) ->
 	x, y = mx - wx, my - wy
 	handler(x, y, button)
 
 sui.mousepressed = (handler, widget) ->
-	obj = copy(widget)
-	obj.mousepressed = connect_handler obj.mousepressed, handle_on_area obj, handler
-	return obj
+	eventhandler 'mousepressed', mouse_coordinate_transform(handle_on_area(widget.size, handler)), widget
 
 sui.mousereleased = (handler, widget) ->
-	obj = copy(widget)
-	obj.mousereleased = connect_handler obj.mousereleased, handle_on_area obj, handler
-	return obj
+	eventhandler 'mousereleased', mouse_coordinate_transform(handle_on_area(widget.size, handler)), widget
 
 sui.global_mousepressed = (handler, widget) ->
-	obj = copy(widget)
-	obj.mousepressed = connect_handler obj.mousepressed, handle_global obj, handler
-	return obj
+	eventhandler 'mousepressed', mouse_coordinate_transform(handler), widget
 
 sui.global_mousereleased = (handler, widget) ->
-	obj = copy(widget)
-	obj.mousereleased = connect_handler obj.mousereleased, handle_global obj, handler
-	return obj
+	eventhandler 'mousereleased', mouse_coordinate_transform(handler), widget
 
 sui.update = (handler, widget) ->
-	obj = copy(widget)
-	obj.update = connect_handler obj.update, handler
-	return obj
+	eventhandler 'update', handler, widget
 
 sui.clicked = (handler, widget) ->
 	mousedown = nil
