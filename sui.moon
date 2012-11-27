@@ -96,7 +96,7 @@ sui.hbox = (padding, widgets) ->
 			w, h = wid.size()
 			ox += w + p
 			oy = math.max oy, h
-		return ox, oy - p
+		return ox - p, oy
 	func = (name) -> (x, y, ...) ->
 		p = bang(padding)
 		ox = 0
