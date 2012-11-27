@@ -140,7 +140,7 @@ sui.option = (key, widgets) ->
 	obj.update = func 'update'
 	return obj
 
-eventhandler = (name, handler, widget) ->
+sui.event = (name, handler, widget) ->
 	obj = copy(widget)
 	obj[name] = connect_handler obj[name], handler
 	return obj
@@ -156,19 +156,31 @@ mouse_coordinate_transform = (handler) -> (wx, wy, mx, my, button) ->
 	handler(x, y, button)
 
 sui.mousepressed = (handler, widget) ->
-	eventhandler 'mousepressed', mouse_coordinate_transform(handle_on_area(widget.size, handler)), widget
+	sui.event 'mousepressed', mouse_coordinate_transform(handle_on_area(widget.size, handler)), widget
 
 sui.mousereleased = (handler, widget) ->
-	eventhandler 'mousereleased', mouse_coordinate_transform(handle_on_area(widget.size, handler)), widget
+	sui.event 'mousereleased', mouse_coordinate_transform(handle_on_area(widget.size, handler)), widget
 
 sui.global_mousepressed = (handler, widget) ->
-	eventhandler 'mousepressed', mouse_coordinate_transform(handler), widget
+	sui.event 'mousepressed', mouse_coordinate_transform(handler), widget
 
 sui.global_mousereleased = (handler, widget) ->
-	eventhandler 'mousereleased', mouse_coordinate_transform(handler), widget
+	sui.event 'mousereleased', mouse_coordinate_transform(handler), widget
 
 sui.update = (handler, widget) ->
-	eventhandler 'update', handler, widget
+	sui.event 'update', handler, widget
+
+sui.keypressed = (handler, widget) ->
+	sui.event 'keypressed', handler, widget
+
+sui.keyreleased = (handler, widget) ->
+	sui.event 'keyreleased', handler, widget
+
+sui.joystickpressed = (handler, widget) ->
+	sui.event 'joystickpressed', handler, widget
+
+sui.joystickreleased = (handler, widget) ->
+	sui.event 'joystickreleased', handler, widget
 
 sui.clicked = (handler, widget) ->
 	mousedown = nil
