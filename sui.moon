@@ -14,11 +14,10 @@ bang = (obj) ->
 	else
 		obj
 
-sequence = (...) ->
-	fs = {...}
+sequence = (f1, f2) ->
 	(...) ->
-		for i, f in ipairs(fs)
-			f ...
+		f1 ...
+		f2 ...
 
 forward = (table) -> ->
 	i = 0
