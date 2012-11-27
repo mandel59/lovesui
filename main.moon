@@ -16,25 +16,23 @@ mouse_x, mouse_y = 0, 0
 font = -> newFont(16)
 bigFont = -> newFont(24)
 
-focus_get = (focusroot, widget) ->
+local ui
+focus_get = (widget) ->
 	local obj
 	obj = sui.focusstop sui.mousepressed ->
-			root = sui.bang(focusroot)
-			changefocus = root.changefocus
+			changefocus = ui.changefocus
 			if type(changefocus) == 'function'
 				changefocus(obj),
 		widget
 	return obj
-
-local ui
 ui = sui.focusroot sui.vbox 5, {
-	sui.font -> bigFont,
-		sui.focusstop sui.focusbc {64, 64, 64, 255},
+	focus_get sui.focusbc {64, 64, 64, 255},
+		sui.font -> bigFont,
 			sui.label 200, 24, "Hello, world!"
-	sui.focusstop sui.focusbc {64, 64, 64, 255},
+	focus_get sui.focusbc {64, 64, 64, 255},
 		sui.label 200, 16, -> tostring value1
 	sui.bc {50, 50, 50, 255}, sui.hbar 200, 16, -> value1 / 100
-	sui.focusstop sui.focusbc {64, 64, 64, 255}, sui.hbox 5, {
+	focus_get sui.focusbc {64, 64, 64, 255}, sui.hbox 5, {
 		sui.focusstop sui.focusbc {64, 64, 64, 255},
 			sui.pie 50, -> value1 / 100
 		sui.margin 10, 10, sui.focusstop sui.focusbc {64, 64, 64, 255},
@@ -43,7 +41,7 @@ ui = sui.focusroot sui.vbox 5, {
 			sui.fc -> if value2f() == 100 then return {255, 128, 64, 255},
 				sui.pie 50, -> value2f() / 100
 	}
-	focus_get (-> ui), sui.bc {32, 32, 32, 255}, sui.focusbc {64, 64, 64, 255}, sui.vbox 5, {
+	focus_get sui.bc {32, 32, 32, 255}, sui.focusbc {64, 64, 64, 255}, sui.vbox 5, {
 		sui.focusoption {
 			[true]: sui.label 200, 16, -> "Type away! #text = " .. tostring(#text)
 			[false]: sui.label 200, 16, -> "Focus on me!"
@@ -55,7 +53,7 @@ ui = sui.focusroot sui.vbox 5, {
 					text ..= string.char(unicode),
 			sui.label 200, 16, -> text
 	}
-	sui.margin 5, 5, sui.clicked (x, y, button) ->
+	focus_get sui.focusbc {64, 64, 64, 255}, sui.margin 5, 5, sui.clicked (x, y, button) ->
 			if button == 'l'
 				clicked1 = 1
 				mouse_x, mouse_y = x, y,
