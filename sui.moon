@@ -49,7 +49,7 @@ rotate_focus = (f_iter, b_iter) ->
 	(f, i) ->
 		iter = if type(i) == 'boolean' and i then b_iter else f_iter
 		for wid in iter()
-			focus = wid.focus
+			focus = wid.changefocus
 			if type(focus) == 'function'
 				f, i = focus f, i
 		return f, i
@@ -81,8 +81,8 @@ sui.vbox = (padding, widgets) ->
 		for i, wid in ipairs widgets
 			f = wid.update
 			if type(f) == 'function' then f(...)
-	obj.focus = rotate_focus forward(widgets), backward(widgets)
-	obj.focus(true)
+	obj.changefocus = rotate_focus forward(widgets), backward(widgets)
+	obj.changefocus(true)
 	return obj
 
 sui.hbox = (padding, widgets) ->
@@ -112,8 +112,8 @@ sui.hbox = (padding, widgets) ->
 		for i, wid in ipairs widgets
 			f = wid.update
 			if type(f) == 'function' then f(...)
-	obj.focus = rotate_focus forward(widgets), backward(widgets)
-	obj.focus(true)
+	obj.changefocus = rotate_focus forward(widgets), backward(widgets)
+	obj.changefocus(true)
 	return obj
 
 sui.option = (key, widgets) ->
@@ -190,16 +190,20 @@ sui.clicked = (handler, widget) ->
 
 sui.focusroot = (widget) ->
 	obj = copy(widget)
-	focus = obj.focus
-	obj.focus = (f, i) ->
+	focus = obj.changefocus
+	obj.changefocus = (f, i) ->
 		f, i = focus(f, i)
 		if f then focus(true, i)
 	return obj
 
 sui.focus = (handler, widget) ->
+	sui.event 'focus', handler, widget
+
+sui.focusstop = (widget) ->
 	obj = copy(widget)
-	focus = obj.focus
 	focused = false
+	focus = obj.focus
+	if type(focus) ~= 'function' then focus = ->
 	func = (f, i) ->
 		x = f or focused
 		y = focused
@@ -225,16 +229,16 @@ sui.focus = (handler, widget) ->
 					if x
 						if i > 0 then i -= 1 else i += 1
 		if focused != y
-			handler(focused)
+			focus(focused)
 		return x, i
-	obj.focus = connect_focus focus, func
-	obj.focus(true)
+	obj.changefocus = connect_focus obj.changefocus, func
+	obj.changefocus(true)
 	return obj
 
 sui.focusbc = (color, handler, widget) ->
 	focused = false
 	sui.bc (-> if focused then bang(color)),
-		sui.focus connect_handler(handler, (f) -> focused = f),
+		sui.focusstop sui.focus connect_handler(handler, (f) -> focused = f),
 			widget
 
 sui.float = (dx, dy, widget) ->
