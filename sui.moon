@@ -33,6 +33,8 @@ backward = (table) -> ->
 
 sui = {}
 
+sui.bang = bang
+
 connect_handler = (child, parent) ->
 	if type(child) == 'function'
 		sequence(child, parent)
@@ -41,22 +43,34 @@ connect_handler = (child, parent) ->
 
 connect_focus = (child, parent) ->
 	if type(child) == 'function'
-		(f, i) -> return child(parent(f, i))
+		(i, f) -> return child(parent(i, f))
 	else
 		parent
 
 rotate_focus = (f_iter, b_iter) ->
-	(f, i) ->
+	(i, f) ->
 		iter = if type(i) == 'boolean' and i then b_iter else f_iter
 		for wid in iter()
-			focus = wid.changefocus
-			if type(focus) == 'function'
-				f, i = focus f, i
-		return f, i
+			changefocus = wid.changefocus
+			if type(changefocus) == 'function'
+				i, f = changefocus i, f
+		return i, f
 
-sui.vbox = (padding, widgets) ->
+allwidget = (name, widgets) -> (...) ->
+	for i, wid in ipairs widgets
+		f = wid[name]
+		if type(f) == 'function' then f ...
+
+container = (func, widgets, ...) ->
+	names = {'update', 'focus', 'keypressed', 'keyreleased', 'joystickpressed', 'joystickreleased', ...}
 	obj = {}
 	obj.children = widgets
+	for k, v in ipairs names
+		obj[v] = func v, widgets
+	return obj
+
+sui.vbox = (padding, widgets) ->
+	obj = container allwidget, widgets
 	obj.size = (x, y, ...) ->
 		p = bang(padding)
 		ox, oy = 0, 0
@@ -77,16 +91,12 @@ sui.vbox = (padding, widgets) ->
 	obj.draw = func 'draw'
 	obj.mousepressed = func 'mousepressed'
 	obj.mousereleased = func 'mousereleased'
-	obj.update = (...) ->
-		for i, wid in ipairs widgets
-			f = wid.update
-			if type(f) == 'function' then f(...)
 	obj.changefocus = rotate_focus forward(widgets), backward(widgets)
 	obj.changefocus(true)
 	return obj
 
 sui.hbox = (padding, widgets) ->
-	obj = {}
+	obj = container allwidget, widgets
 	obj.children = widgets
 	obj.size = (x, y, ...) ->
 		p = bang(padding)
@@ -108,35 +118,23 @@ sui.hbox = (padding, widgets) ->
 	obj.draw = func 'draw'
 	obj.mousepressed = func 'mousepressed'
 	obj.mousereleased = func 'mousereleased'
-	obj.update = (...) ->
-		for i, wid in ipairs widgets
-			f = wid.update
-			if type(f) == 'function' then f(...)
 	obj.changefocus = rotate_focus forward(widgets), backward(widgets)
 	obj.changefocus(true)
 	return obj
 
 sui.option = (key, widgets) ->
-	obj = {}
-	obj.children = widgets
+	func = (name, wids) -> (...) ->
+		wid = wids[bang(key)]
+		if wid ~= nil
+			v = wid[name]
+			if type(v) == 'function' then v(...)
+	obj = container func, widgets, 'draw', 'mousepressed', 'mousereleased'
 	obj.size = ->
 		wid = widgets[bang(key)]
 		if wid ~= nil
 			return wid.size()
 		else
 			return 0, 0
-	func = (name) -> (...) ->
-		wid = widgets[bang(key)]
-		if wid ~= nil
-			v = wid[name]
-			if type(v) == 'function'
-				v(...)
-			else
-				v
-	obj.draw = func 'draw'
-	obj.mousepressed = func 'mousepressed'
-	obj.mousereleased = func 'mousereleased'
-	obj.update = func 'update'
 	return obj
 
 sui.event = (name, handler, widget) ->
@@ -190,10 +188,11 @@ sui.clicked = (handler, widget) ->
 
 sui.focusroot = (widget) ->
 	obj = copy(widget)
-	focus = obj.changefocus
-	obj.changefocus = (f, i) ->
-		f, i = focus(f, i)
-		if f then focus(true, i)
+	changefocus = obj.changefocus
+	obj.changefocus = (i, f) ->
+		i, f = changefocus(i, f)
+		if f then changefocus(i, true)
+	obj.changefocus(nil, true)
 	return obj
 
 sui.focus = (handler, widget) ->
@@ -204,7 +203,7 @@ sui.focusstop = (widget) ->
 	focused = false
 	focus = obj.focus
 	if type(focus) ~= 'function' then focus = ->
-	func = (f, i) ->
+	func = (i, f) ->
 		x = f or focused
 		y = focused
 		switch type(i)
@@ -230,16 +229,24 @@ sui.focusstop = (widget) ->
 						if i > 0 then i -= 1 else i += 1
 		if focused != y
 			focus(focused)
-		return x, i
+		return i, x
 	obj.changefocus = connect_focus obj.changefocus, func
-	obj.changefocus(true)
 	return obj
 
-sui.focusbc = (color, handler, widget) ->
+sui.focusbc = (color, widget) ->
 	focused = false
-	sui.bc (-> if focused then bang(color)),
-		sui.focusstop sui.focus connect_handler(handler, (f) -> focused = f),
-			widget
+	sui.focus (f) -> focused = f,
+		sui.bc (-> if focused then bang(color)), widget
+
+sui.focusevent = (name, handler, widget) ->
+	focused = false
+	sui.focus ((f) -> focused = f),
+		sui.event name, ((...) -> if focused then handler ...), widget
+
+sui.focusoption = (widgets) ->
+	focused = false
+	sui.focus ((f) -> focused = f),
+		sui.option (-> focused), widgets
 
 sui.float = (dx, dy, widget) ->
 	obj = copy(widget)

@@ -16,24 +16,45 @@ mouse_x, mouse_y = 0, 0
 font = -> newFont(16)
 bigFont = -> newFont(24)
 
+focus_get = (focusroot, widget) ->
+	local obj
+	obj = sui.focusstop sui.mousepressed ->
+			root = sui.bang(focusroot)
+			changefocus = root.changefocus
+			if type(changefocus) == 'function'
+				changefocus(obj),
+		widget
+	return obj
+
+local ui
 ui = sui.focusroot sui.vbox 5, {
 	sui.font -> bigFont,
-		sui.focusbc {64, 64, 64, 255}, nil,
+		sui.focusstop sui.focusbc {64, 64, 64, 255},
 			sui.label 200, 24, "Hello, world!"
-	sui.focusbc {64, 64, 64, 255}, nil,
+	sui.focusstop sui.focusbc {64, 64, 64, 255},
 		sui.label 200, 16, -> tostring value1
 	sui.bc {50, 50, 50, 255}, sui.hbar 200, 16, -> value1 / 100
-	sui.focusbc {64, 64, 64, 255}, nil, sui.hbox 5, {
-		sui.focusbc {64, 64, 64, 255}, nil,
+	sui.focusstop sui.focusbc {64, 64, 64, 255}, sui.hbox 5, {
+		sui.focusstop sui.focusbc {64, 64, 64, 255},
 			sui.pie 50, -> value1 / 100
-		sui.margin 10, 10, sui.focusbc {64, 64, 64, 255}, nil,
+		sui.margin 10, 10, sui.focusstop sui.focusbc {64, 64, 64, 255},
 			sui.pie 30, -> 1 - value1 / 100
-		sui.focusbc {64, 64, 64, 255}, nil,
+		sui.focusstop sui.focusbc {64, 64, 64, 255},
 			sui.fc -> if value2f() == 100 then return {255, 128, 64, 255},
 				sui.pie 50, -> value2f() / 100
 	}
-	sui.label 200, 16, -> "Type away! #text = " .. tostring(#text)
-	sui.label 200, 16, -> text
+	focus_get (-> ui), sui.bc {32, 32, 32, 255}, sui.focusbc {64, 64, 64, 255}, sui.vbox 5, {
+		sui.focusoption {
+			[true]: sui.label 200, 16, -> "Type away! #text = " .. tostring(#text)
+			[false]: sui.label 200, 16, -> "Focus on me!"
+		}
+		sui.focusevent 'keypressed', (key, unicode) ->
+				if key == 'backspace'
+					text = string.sub(text, 1, -2)
+				elseif 0x20 <= unicode and unicode < 0x7F
+					text ..= string.char(unicode),
+			sui.label 200, 16, -> text
+	}
 	sui.margin 5, 5, sui.clicked (x, y, button) ->
 			if button == 'l'
 				clicked1 = 1
@@ -80,7 +101,7 @@ love.mousereleased = (x, y, button) ->
 love.keypressed = (key, unicode) ->
 	switch key
 		when 'tab'
-			ui.changefocus(false, love.keyboard.isDown('lshift', 'rshift'))
+			ui.changefocus(love.keyboard.isDown('lshift', 'rshift'))
 		when 'f5'
 			love.filesystem.load('sui.lua')()
 			love.filesystem.load('main.lua')()
@@ -89,11 +110,6 @@ love.keypressed = (key, unicode) ->
 			screenshot = love.graphics.newScreenshot()
 			screenshot\encode('out.png')
 			print 'screenshot saved'
-		when 'backspace'
-			text = string.sub(text, 1, -2)
-		when 'return'
-			text ..= '\n'
 		else
-			if 0x20 <= unicode and unicode < 0x7F
-				text ..= string.char(unicode)
+			ui.keypressed(key, unicode)
 	return
