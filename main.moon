@@ -33,13 +33,16 @@ ui = sui.focusroot sui.vbox 5, {
 		sui.label 200, 16, -> tostring value1
 	sui.bc {50, 50, 50, 255}, sui.hbar 200, 16, -> value1 / 100
 	focus_get sui.focusbc {64, 64, 64, 255}, sui.hbox 5, {
-		sui.focusstop sui.focusbc {64, 64, 64, 255},
-			sui.pie 50, -> value1 / 100
-		sui.margin 10, 10, sui.focusstop sui.focusbc {64, 64, 64, 255},
-			sui.pie 30, -> 1 - value1 / 100
+		sui.layer {
+			sui.focusstop sui.focusfc {250, 150, 100, 255},
+				sui.pie 90, -> value1 / 100
+			sui.margin 20, 20, sui.fc {150, 150, 150, 255},
+				sui.focusstop sui.focusfc {200, 100, 50, 255},
+					sui.pie 50, -> 1 - value1 / 100
+		}
 		sui.focusstop sui.focusbc {64, 64, 64, 255},
 			sui.fc -> if value2f() == 100 then return {255, 128, 64, 255},
-				sui.pie 50, -> value2f() / 100
+				sui.pie 90, -> value2f() / 100
 	}
 	focus_get sui.bc {32, 32, 32, 255}, sui.focusbc {64, 64, 64, 255}, sui.vbox 5, {
 		sui.focusoption {

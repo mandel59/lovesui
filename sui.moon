@@ -69,6 +69,18 @@ container = (func, widgets, ...) ->
 		obj[v] = func v, widgets
 	return obj
 
+sui.layer = (widgets) ->
+	obj = container allwidget, widgets, 'draw', 'mousepressed', 'mousereleased'
+	obj.changefocus = rotate_focus forward(widgets), backward(widgets)
+	obj.size = ->
+		ox, oy = 0, 0
+		for i, wid in ipairs widgets
+			w, h = wid.size()
+			ox = math.max ox, w
+			oy = math.max oy, h
+		return ox, oy
+	return obj
+
 sui.vbox = (padding, widgets) ->
 	obj = container allwidget, widgets
 	obj.size = (x, y, ...) ->
@@ -92,7 +104,6 @@ sui.vbox = (padding, widgets) ->
 	obj.mousepressed = func 'mousepressed'
 	obj.mousereleased = func 'mousereleased'
 	obj.changefocus = rotate_focus forward(widgets), backward(widgets)
-	obj.changefocus(true)
 	return obj
 
 sui.hbox = (padding, widgets) ->
@@ -232,6 +243,11 @@ sui.focusstop = (widget) ->
 		return i, x
 	obj.changefocus = connect_focus obj.changefocus, func
 	return obj
+
+sui.focusfc = (color, widget) ->
+	focused = false
+	sui.focus (f) -> focused = f,
+		sui.fc (-> if focused then bang(color)), widget
 
 sui.focusbc = (color, widget) ->
 	focused = false
