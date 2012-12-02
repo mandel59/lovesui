@@ -426,7 +426,7 @@ sui.frame = (width, height, draw) ->
 	return obj
 
 sui.label = (width, height, caption) ->
-	sui.frame width, height, (x, y) -> graphics.print bang(caption), x, y
+	sui.frame width, height, (x, y) -> graphics.printf bang(caption), x, y, bang(width)
 
 sui.hbar = (width, height, value) ->
 	sui.frame width, height, (x, y) -> graphics.rectangle 'fill', x, y, bang(width) * bang(value), bang(height)
