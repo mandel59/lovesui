@@ -87,6 +87,8 @@ container = (func, widgets, ...) ->
 		obj[v] = func v, widgets
 	return obj
 
+sui.container = container
+
 sui.layer = (widgets) ->
 	obj = container allwidget, widgets, 'draw', 'mousepressed', 'mousereleased'
 	obj.changefocus = rotate_focus forward(widgets), backward(widgets)
@@ -149,6 +151,33 @@ sui.hbox = (padding, widgets) ->
 	obj.mousereleased = func 'mousereleased'
 	obj.changefocus = rotate_focus forward(widgets), backward(widgets)
 	obj.changefocus(true)
+	return obj
+
+sui.grid = (width, height, column, widgets) ->
+	obj = container allwidget, widgets
+	obj.size = (x, y, ...) ->
+		w, h = bang(width), bang(height)
+		c = math.floor(bang(column))
+		if c == 0
+			return w * #widgets, h
+		else
+			return w * c, h * math.ceil(#widgets / c)
+	func = (name) -> (x, y, ...) ->
+		ox, oy = 0, 0
+		w, h = bang(width), bang(height)
+		c = math.ceil(bang(column))
+		for i, wid in ipairs widgets
+			f = wid[name]
+			if type(f) == 'function'
+				f x + ox, y + oy, ...
+			ox += w
+			if c ~= 0 and i % c == 0
+				ox = 0
+				oy += h
+	obj.draw = func 'draw'
+	obj.mousepressed = func 'mousepressed'
+	obj.mousereleased = func 'mousereleased'
+	obj.changefocus = rotate_focus forward(widgets), backward(widgets)
 	return obj
 
 sui.option = (key, widgets) ->
@@ -353,6 +382,41 @@ sui.bc = (color, widget) ->
 		graphics.rectangle 'fill', x, y, w, h
 		graphics.setColor r, g, b, a
 		draw x, y
+	return obj
+
+sui.scale = (sx, sy, widget) ->
+	import ceil, abs from math
+	import push, pop, translate, scale from graphics
+	obj = copy(widget)
+	size = obj.size
+	draw = obj.draw
+	mousepressed = obj.mousepressed
+	mousereleased = obj.mousereleased
+	obj.size = ->
+		w, h = size()
+		return ceil(abs(w * bang(sx))), ceil(abs(h * bang(sy)))
+	obj.draw = (x, y) ->
+		local lsx, lsy
+		lsx, lsy = bang(sx), bang(sy)
+		w, h = size()
+		wx, wy = 0, 0
+		if lsx < 0
+			wx = -w
+		if lsy < 0
+			wy = -h
+		push()
+		translate x, y
+		scale lsx, lsy
+		draw wx, wy
+		pop()
+	func = (f) -> (wx, wy, mx, my, button) ->
+		x, y = bang(sx), bang(sy)
+		if x < 0 then x = -x
+		if y < 0 then y = -y
+		if x ~= 0 and y ~= 0
+			f(0, 0, (mx - wx) / x, (my - wy) / y)
+	if type(mousepressed) == 'function' then obj.mousepressed = func mousepressed
+	if type(mousereleased) == 'function' then obj.mousereleased = func mousereleased
 	return obj
 
 sui.frame = (width, height, draw) ->
