@@ -150,7 +150,6 @@ sui.hbox = (padding, widgets) ->
 	obj.mousepressed = func 'mousepressed'
 	obj.mousereleased = func 'mousereleased'
 	obj.changefocus = rotate_focus forward(widgets), backward(widgets)
-	obj.changefocus(true)
 	return obj
 
 sui.grid = (width, height, column, widgets) ->
@@ -262,7 +261,7 @@ sui.focusstop = (widget) ->
 	focus = obj.focus
 	if type(focus) ~= 'function' then focus = ->
 	func = (i, f) ->
-		x = f or focused
+		x = f or focused or false
 		y = focused
 		switch type(i)
 			when 'nil'
@@ -419,6 +418,28 @@ sui.scale = (sx, sy, widget) ->
 	if type(mousereleased) == 'function' then obj.mousereleased = func mousereleased
 	return obj
 
+sui.translate = (dx, dy, widget) ->
+	import push, pop, translate from graphics
+	obj = copy(widget)
+	size = obj.size
+	draw = obj.draw
+	mousepressed = obj.mousepressed
+	mousereleased = obj.mousereleased
+	obj.size = ->
+		w, h = size()
+		return ceil(w + bang(dx)), ceil(h + bang(dy))
+	obj.draw = (x, y) ->
+		push()
+		translate bang(dx), bang(dy)
+		draw x, y
+		pop()
+	func = (f) -> (wx, wy, mx, my, button) ->
+		x, y = bang(dx), bang(dy)
+		f(wx, wy, mx - x, wy - y)
+	if type(mousepressed) == 'function' then obj.mousepressed = func mousepressed
+	if type(mousereleased) == 'function' then obj.mousereleased = func mousereleased
+	return obj
+
 sui.frame = (width, height, draw) ->
 	obj = {}
 	obj.size = -> return bang(width), bang(height)
@@ -427,6 +448,15 @@ sui.frame = (width, height, draw) ->
 
 sui.label = (width, height, caption) ->
 	sui.frame width, height, (x, y) -> graphics.printf bang(caption), x, y, bang(width)
+
+sui.alabel = (width, height, align, caption) ->
+	sui.frame width, height, (x, y) -> graphics.printf bang(caption), x, y, bang(width), bang(align)
+
+sui.clabel = (width, height, caption) ->
+	sui.frame width, height, (x, y) -> graphics.printf bang(caption), x, y, bang(width), 'center'
+
+sui.rlabel = (width, height, caption) ->
+	sui.frame width, height, (x, y) -> graphics.printf bang(caption), x, y, bang(width), 'right'
 
 sui.hbar = (width, height, value) ->
 	sui.frame width, height, (x, y) -> graphics.rectangle 'fill', x, y, bang(width) * bang(value), bang(height)
@@ -440,4 +470,26 @@ sui.pie = (diameter, value) ->
 	obj.size = ->
 		d = bang(diameter)
 		return d, d
+	return obj
+
+sui.flipable = (angle, widgets) ->
+	import max, cos from math
+	local w, o
+	widget1 = widgets[1]
+	widget2 = widgets[2]
+	w1, h1 = widget1.size()
+	w2, h2 = widget2.size()
+	w, h = max(w1, w2), max(h1, h2)
+	o = 1
+	set_o = -> o = cos(bang angle)
+	f0 = ->
+		cos(bang angle) >= 0
+	f1 = ->
+		w / 2 * (1 - o)
+	f2 = -> w / 2 * (1 + o)
+	obj = sui.update set_o, sui.option f0, {
+		[true]: sui.translate f1, 0, sui.scale (-> o), 1, widget1
+		[false]: sui.translate f2, 0, sui.scale (-> -o), 1, widget2
+	}
+	obj.size = -> w, h
 	return obj
