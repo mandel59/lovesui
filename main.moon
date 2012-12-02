@@ -49,9 +49,13 @@ focus_get = (widget) ->
 		widget
 	return obj
 ui = sui.focusroot sui.vbox 5, {
-	focus_get sui.focusbc {64, 64, 64, 255},
+	sui.scale (-> math.cos(value1 / 4)), 1, focus_get sui.focusbc {64, 64, 64, 255},
 		sui.font -> bigFont,
 			sui.label 200, 24, "Hello, world!"
+	focus_get sui.focusbc {64, 64, 64, 255}, sui.font (-> bigFont), sui.flipable (-> value1), {
+		sui.clabel 200, 24, "Hello, world!"
+		sui.clabel 200, 24, "Goodbye, world!"
+	}
 	focus_get toggleButton()
 	focus_get sui.focusbc {64, 64, 64, 255},
 		sui.label 200, 16, -> tostring value1
